@@ -5,36 +5,51 @@ from urllib.parse import parse_qsl
 from log_mem import *
 import config
 import requests
+import text
 
 def application(env, start_response):
   global log
   start_response('200 OK', [('Content-Type', 'text/plain')])
 
   log = Log()
-  log.append("Checking parameters...")
+  log.append(text.LOG_APP_STEP_CHECK)
   params = dict(parse_qsl(env['QUERY_STRING']))
-  ok = check_param(params, 'tg')
-  ok = check_param(params, 'chat_id') and ok
-  ok = check_param(params, 'text') and ok
+  ok1, bot_id = check_param(params, 'tg', config.tokens)
+  ok2, chat_id = check_param(params, 'chat_id', config.chat_ids)
+  ok3, msg = check_param(params, 'text')
 
-  if ok:
-    send_message(params['tg'], params['chat_id'], params['text'])
+  if ok1 and ok2 and ok3:
+    send_message(bot_id, chat_id, msg)
   else:
-    log.append("Not all params are specified. No sending performed.")
+    log.append(text.LOG_PARAM_ERR_WRONG)
   return [log.print()]
 
-def check_param(params, name):
-  ok = name in params
-  log.append(f"{name}: {params[name] if ok else 'None'}", 1)
-  return ok
-
-def send_message(bot_id, chat_id, text):
-  log.append("Sending message...")
-  if bot_id in config.tokens and chat_id in config.chat_ids and text != '':
-    response = requests.get(f"https://api.telegram.org/bot{config.tokens[bot_id]}/sendMessage?parse_mode=HTML&chat_id={chat_id}&text={text}")
-    log.append(f"Response: {str(response.json())}", 1)
+def check_param(params, name, values = None):
+  is_valid = False
+  value = None
+  is_defined = name in params
+  if is_defined:
+    value = str(params[name]).strip()
+    is_not_empty = len(value) > 0
+    is_valid = is_not_empty
+    if is_valid and values != None:
+      if isinstance(values, (dict, list)):
+        is_valid = value in values
+  if not is_defined:
+    param_msg = text.LOG_PARAM_ERR_NOT_DEFINED
+  elif not is_not_empty:
+    param_msg = text.LOG_PARAM_ERR_EMPTY
+  elif not is_valid:
+    param_msg = f"{value} {text.LOG_PARAM_ERR_NOT_FOUND}"
   else:
-    log.append("Specified bot and user ids should be defined in config, also text should be not blank.", 1)
+    param_msg = value
+  log.append(f"{name}: {param_msg}", 1)
+  return is_valid, value
+
+def send_message(bot_id, chat_id, msg):
+  log.append(text.LOG_APP_STEP_SEND)
+  response = requests.get(f"https://api.telegram.org/bot{config.tokens[bot_id]}/sendMessage?parse_mode=HTML&chat_id={chat_id}&text={msg}")
+  log.append(f"{text.LOG_APP_STEP_RESPONSE}: {str(response.json())}")
 
 # Next lines are for testing purposes only
 def dummy_response(status, headers):
