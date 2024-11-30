@@ -1,4 +1,5 @@
-LOG_APP_STEP_CHECK = "Checking parameters..."
+LOG_APP_VAR_ENV = "Environment:"
+LOG_APP_VAR_QUERY = "Query parameters:"
 LOG_APP_STEP_SEND = "Sending message..."
 LOG_APP_STEP_RESPONSE = "Response"
 
