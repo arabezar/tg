@@ -1,7 +1,9 @@
 # This config is just a template for yours one
 
-tokens = {'my_bot_friendly_name': 'my_bot_token'} # my_bot_friendly_name - URL param tg value
+tokens = {'my_bot_friendly_name': 'my_bot_token', } # my_bot_friendly_name - URL param tg value
 
-chat_ids = ['my_telegram_user_id'] # my_telegram_user_id - URL param chat_id value
+users = {'my_any_nickname': 'my_telegram_user_id', } # my_any_nickname - URL param user value; can be my_telegram_user_id as well
 
-TEST_QUERY_STR = 'tg=<my_bot_friendly_name>&chat_id=<my_telegram_user_id>&text=Hello world!'
+rights = {'my_bot_friendly_name': ['my_any_nickname', ], } # access rights for bots and users above
+
+TEST_QUERY_STR = 'tg=<my_bot_friendly_name>&user=<my_any_nickname|my_telegram_user_id>&text=Hello world!'

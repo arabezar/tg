@@ -25,32 +25,44 @@ def application(env, start_response):
       logging.debug(f"\t{key}: {value}")
   else:
     logging.log(log_level, f"\tREMOTE_ADDR:REMOTE_PORT: QUERY_STRING: {env['REMOTE_ADDR']}:{env['REMOTE_PORT']}: {env['QUERY_STRING']}")
+    # if env['QUERY_STRING']:
+    #   logging.log(log_level, f"\t\tunquoted: {unquote(env['QUERY_STRING'])}")
   
   # log and check all query vars
   logging.debug(text.LOG_APP_VAR_QUERY)
   params = dict(parse_qsl(env['QUERY_STRING']))
-  ok1, bot_id = check_param(params, 'tg', config.tokens)
-  ok2, chat_id = check_param(params, 'chat_id', config.chat_ids)
+  ok1, bot = check_param(params, 'tg', config.tokens)
+  ok2, users = check_param(params, 'user', config.users, True)
   ok3, msg = check_param(params, 'text')
 
   # send message
   if ok1 and ok2 and ok3:
-    send_message(bot_id, chat_id, msg)
+    valid_users = check_rights(bot, users)
+    if valid_users:
+      send_message(bot, valid_users, msg)
   else:
     logging.error(text.LOG_PARAM_ERR_WRONG)
   return [b' ']
 
-def check_param(params, name, values = None):
+def check_param(params, name, values = None, multi = False):
   is_valid = False
   value = None
+  ret = []
   is_defined = name in params
   if is_defined:
     value = str(params[name]).strip()
     is_not_empty = len(value) > 0
     is_valid = is_not_empty
-    if is_valid and values != None:
+    if is_valid and values:
       if isinstance(values, (dict, list)):
-        is_valid = value in values
+        keys = value.split(',') if multi else [value]
+        for val in keys:
+          if val in values:
+            ret += [values[val]]
+          elif isinstance(values, dict):
+            if val in values.values():
+              ret += [val]
+        is_valid = len(ret) > 0
   if not is_defined:
     param_msg = text.LOG_PARAM_ERR_NOT_DEFINED
   elif not is_not_empty:
@@ -60,12 +72,22 @@ def check_param(params, name, values = None):
   else:
     param_msg = value
   logging.debug(f"\t{name}: {unquote(param_msg)}")
-  return is_valid, value
+  return is_valid, ret if multi and ret else value
 
-def send_message(bot_id, chat_id, msg):
+def check_rights(bot, users):
+  bot_valid_users = [config.users[name] for name in config.rights[bot]]
+  valid_users = [user for user in users if user in bot_valid_users]
+  if not valid_users:
+    logging.error(f"{text.LOG_PARAM_ERR_RIGHTS}: {users}")
+  elif len(valid_users) < len(users):
+    logging.warning(f"{text.LOG_PARAM_ERR_RIGHTS_SOME}: {[user for user in users if user not in bot_valid_users]}")
+  return valid_users
+
+def send_message(bot, users, msg):
   logging.debug(text.LOG_APP_STEP_SEND)
-  response = requests.get(f"https://api.telegram.org/bot{config.tokens[bot_id]}/sendMessage?parse_mode=HTML&chat_id={chat_id}&text={msg}")
-  logging.debug(f"{text.LOG_APP_STEP_RESPONSE}: {str(response.json())}")
+  for user in users:
+    response = requests.get(f"https://api.telegram.org/bot{config.tokens[bot]}/sendMessage?parse_mode=HTML&chat_id={user}&text={msg}")
+    logging.debug(f"{text.LOG_APP_STEP_RESPONSE}: {str(response.json())}")
 
 # Next lines are for testing purposes only
 def dummy_response(status, headers):
