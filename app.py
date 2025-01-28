@@ -87,6 +87,8 @@ def send_message(bot, users, msg):
   for user in users:
     response = requests.get(f"https://api.telegram.org/bot{config.tokens[bot]}/sendMessage?parse_mode=HTML&chat_id={user}&text={msg}")
     logging.debug(f"{text.LOG_APP_STEP_RESPONSE}: {str(response.json())}")
+    if not response.ok:
+      logging.error(f"{text.LOG_APP_STEP_RESPONSE}: {str(response.json()['description'])}")
 
 # Next lines are for testing purposes only
 def dummy_response(status, headers):
