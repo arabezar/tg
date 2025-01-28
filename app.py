@@ -1,5 +1,5 @@
 # Synology application for DSM 7 Web Service - Telegram bots consuming
-# Coryright ©2023.12-2024.12 by Arkadi Joutchenko aka Arabezar aka jaaz
+# Coryright ©2023.12-2025.01 by Arkadi Joutchenko aka Arabezar aka jaaz
 
 from urllib.parse import parse_qsl, unquote
 import logging
@@ -14,9 +14,8 @@ verbose = False
 def application(env, start_response):
   start_response('200 OK', [('Content-Type', 'text/plain')])
 
-  logging.basicConfig(level=log_level, filename="tg.log", filemode="a")
-  logging.log(log_level, '=' * 50)
-  logging.log(log_level, f"{datetime.datetime.now()}")
+  logging.basicConfig(level=log_level, filename="tg.log", encoding="utf-8")
+  logging.info(f"{'=' * 50} {datetime.datetime.now()}")
 
   # log all environment vars
   logging.debug(text.LOG_APP_VAR_ENV)
@@ -24,7 +23,7 @@ def application(env, start_response):
     for key, value in env.items():
       logging.debug(f"\t{key}: {value}")
   else:
-    logging.log(log_level, f"\tREMOTE_ADDR:REMOTE_PORT: QUERY_STRING: {env['REMOTE_ADDR']}:{env['REMOTE_PORT']}: {env['QUERY_STRING']}")
+    logging.info(f"\tREMOTE_ADDR:REMOTE_PORT: QUERY_STRING: {env['REMOTE_ADDR']}:{env['REMOTE_PORT']}: {unquote(env['QUERY_STRING'])}")
     # if env['QUERY_STRING']:
     #   logging.log(log_level, f"\t\tunquoted: {unquote(env['QUERY_STRING'])}")
   
